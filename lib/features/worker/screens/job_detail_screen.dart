@@ -1,4 +1,3 @@
-import "package:dio/dio.dart";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
@@ -6,8 +5,11 @@ import "package:go_router/go_router.dart";
 import "../../../core/auth/auth_state.dart";
 import "../../../core/models/enums.dart";
 import "../../../core/models/job.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
 import "../../../core/constants/app_routes.dart";
+import "../../../core/widgets/safe_fallback_screen.dart";
+import "../../../core/widgets/snackbars.dart";
+import "../../../core/widgets/state_views.dart";
 import "../controllers/fee_summary_controller.dart";
 import "../controllers/job_detail_controller.dart";
 import "../widgets/job_labels.dart";
@@ -20,6 +22,11 @@ class JobDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (jobId.isEmpty) {
+      return const SafeFallbackScreen(
+        message: "Không tìm thấy công việc cần hiển thị.",
+      );
+    }
     final jobState = ref.watch(jobDetailControllerProvider(jobId));
     final feeSummaryState = ref.watch(feeSummaryProvider);
     final feeBlocked = feeSummaryState.valueOrNull?.blocked ?? false;
@@ -189,9 +196,9 @@ class JobDetailScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ErrorStateView(
-          message: _errorMessage(error),
+        loading: () => const LoadingView(),
+        error: (error, _) => ErrorStateView(
+          message: mapErrorToMessage(error),
           onRetry: () {
             ref.invalidate(jobDetailControllerProvider(jobId));
           },
@@ -219,16 +226,7 @@ class JobDetailScreen extends ConsumerWidget {
     if (message == null) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  String _errorMessage(Object error) {
-    if (error is DioException) {
-      return mapDioExceptionToMessage(error);
-    }
-    return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    showErrorSnackBar(context, message);
   }
 
   _PosterAction? _buildPosterAction(
@@ -366,26 +364,4 @@ class _FeeWarningBanner extends StatelessWidget {
   }
 }
 
-class _ErrorStateView extends StatelessWidget {
-  const _ErrorStateView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: const Text("Thử lại"),
-          ),
-        ],
-      ),
-    );
-  }
-}
+ 

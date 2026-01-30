@@ -1,9 +1,9 @@
-import "package:dio/dio.dart";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/models/fee.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
+import "../../../core/widgets/snackbars.dart";
 import "../controllers/fee_summary_controller.dart";
 import "../controllers/worker_fees_controller.dart";
 
@@ -125,23 +125,18 @@ class _SubmitPaymentScreenState extends ConsumerState<SubmitPaymentScreen> {
         return;
       }
       if (message != null) {
-        _showMessage(message);
+        showErrorSnackBar(context, message);
       } else {
         await ref.read(workerFeesControllerProvider.notifier).refresh();
         await ref.read(feeSummaryProvider.notifier).refresh();
-        _showMessage("Đã gửi thanh toán thành công.");
+        showSuccessSnackBar(context, "Đã gửi thanh toán thành công.");
         Navigator.of(context).pop();
       }
-    } on DioException catch (error) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
-      _showMessage(mapDioExceptionToMessage(error));
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      _showMessage("Đã có lỗi xảy ra. Vui lòng thử lại.");
+      showErrorSnackBar(context, mapErrorToMessage(error));
     } finally {
       if (mounted) {
         setState(() {
@@ -149,12 +144,6 @@ class _SubmitPaymentScreenState extends ConsumerState<SubmitPaymentScreen> {
         });
       }
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
 }
 

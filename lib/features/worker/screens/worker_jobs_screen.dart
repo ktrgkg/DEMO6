@@ -1,10 +1,12 @@
-import "package:dio/dio.dart";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 
+import "../../../core/auth/auth_state.dart";
 import "../../../core/constants/app_routes.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
+import "../../../core/widgets/account_summary_card.dart";
+import "../../../core/widgets/state_views.dart";
 import "../../worker/controllers/fee_summary_controller.dart";
 import "../../worker/controllers/worker_jobs_controller.dart";
 import "../widgets/worker_job_card.dart";
@@ -45,12 +47,14 @@ class _WorkerJobsScreenState extends ConsumerState<WorkerJobsScreen> {
   Widget build(BuildContext context) {
     final jobsState = ref.watch(workerJobsControllerProvider);
     final feeSummaryState = ref.watch(feeSummaryProvider);
+    final user = ref.watch(authSessionProvider).user;
     final feeBlocked = feeSummaryState.valueOrNull?.blocked ?? false;
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          AccountSummaryCard(user: user),
           Row(
             children: [
               Expanded(
@@ -117,9 +121,17 @@ class _WorkerJobsScreenState extends ConsumerState<WorkerJobsScreen> {
                     },
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 120),
-                        Center(child: Text("Chưa có việc phù hợp")),
+                      children: [
+                        const SizedBox(height: 80),
+                        EmptyStateView(
+                          message:
+                              "Chưa có việc phù hợp. Kéo xuống để cập nhật.",
+                          onRetry: () {
+                            ref
+                                .read(workerJobsControllerProvider.notifier)
+                                .refresh();
+                          },
+                        ),
                       ],
                     ),
                   );
@@ -131,6 +143,7 @@ class _WorkerJobsScreenState extends ConsumerState<WorkerJobsScreen> {
                         .refresh();
                   },
                   child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 4),
                     itemCount: data.jobs.length,
                     itemBuilder: (context, index) {
                       final job = data.jobs[index];
@@ -144,45 +157,14 @@ class _WorkerJobsScreenState extends ConsumerState<WorkerJobsScreen> {
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => _ErrorStateView(
-                message: _errorMessage(error),
+              loading: () => const LoadingView(),
+              error: (error, _) => ErrorStateView(
+                message: mapErrorToMessage(error),
                 onRetry: () {
                   ref.read(workerJobsControllerProvider.notifier).refresh();
                 },
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _errorMessage(Object error) {
-    if (error is DioException) {
-      return mapDioExceptionToMessage(error);
-    }
-    return "Đã có lỗi xảy ra. Vui lòng thử lại.";
-  }
-}
-
-class _ErrorStateView extends StatelessWidget {
-  const _ErrorStateView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: const Text("Thử lại"),
           ),
         ],
       ),

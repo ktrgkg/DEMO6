@@ -9,6 +9,7 @@ class AppStrings {
   static const roleLabel = "Vai trò";
   static const posterRole = "Nhà tuyển dụng";
   static const workerRole = "Người lao động";
+  static const adminRole = "Quản trị viên";
   static const provinceLabel = "Tỉnh";
   static const districtLabel = "Huyện/Thành phố";
   static const loginButton = "Đăng nhập";

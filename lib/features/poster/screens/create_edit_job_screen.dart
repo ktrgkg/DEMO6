@@ -1,10 +1,12 @@
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 
 import "../../../core/auth/auth_state.dart";
 import "../../../core/models/enums.dart";
 import "../../../core/models/job.dart";
+import "../../../core/widgets/snackbars.dart";
 import "../../worker/widgets/job_labels.dart";
 import "../controllers/create_edit_job_controller.dart";
 
@@ -63,9 +65,7 @@ class _CreateEditJobScreenState extends ConsumerState<CreateEditJobScreen> {
     final province = _province;
     final paymentType = _paymentType;
     if (jobType == null || province == null || paymentType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vui lòng chọn đầy đủ thông tin.")),
-      );
+      showErrorSnackBar(context, "Vui lòng chọn đầy đủ thông tin.");
       return;
     }
     final price = int.tryParse(_priceController.text.trim()) ?? 0;
@@ -83,8 +83,7 @@ class _CreateEditJobScreenState extends ConsumerState<CreateEditJobScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      showErrorSnackBar(context, message);
       return;
     }
     context.pop();
@@ -197,6 +196,7 @@ class _CreateEditJobScreenState extends ConsumerState<CreateEditJobScreen> {
               controller: _priceController,
               enabled: canEdit,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(labelText: "Giá *"),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {

@@ -20,21 +20,28 @@ class HomeScreen extends ConsumerWidget {
     final role = authState.user?.role ?? UserRole.worker;
     if (role == UserRole.worker) {
       return WorkerHomeScreen(onLogout: () {
-        ref.read(authControllerProvider).logout();
+        _handleLogout(context, ref);
       });
     }
     if (role == UserRole.admin) {
       return AdminFeesScreen(
         onLogout: () {
-          ref.read(authControllerProvider).logout();
+          _handleLogout(context, ref);
         },
       );
     }
     return PosterJobsScreen(
       onLogout: () {
-        ref.read(authControllerProvider).logout();
+        _handleLogout(context, ref);
       },
     );
+  }
+
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    await ref.read(authControllerProvider).logout();
+    if (context.mounted) {
+      context.go(AppRoutes.login);
+    }
   }
 }
 

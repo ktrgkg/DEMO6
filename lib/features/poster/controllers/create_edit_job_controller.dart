@@ -3,7 +3,7 @@ import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/models/enums.dart";
 import "../../../core/models/job.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
 import "../../../core/repositories/job_repository.dart";
 import "../../worker/controllers/job_detail_controller.dart";
 import "poster_jobs_controller.dart";
@@ -59,10 +59,10 @@ class CreateEditJobController extends AutoDisposeNotifier<CreateEditJobState> {
       return null;
     } on DioException catch (error) {
       state = state.copyWith(isSubmitting: false);
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = state.copyWith(isSubmitting: false);
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 }

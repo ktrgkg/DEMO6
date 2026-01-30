@@ -1,9 +1,8 @@
-import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/auth/auth_state.dart";
 import "../../../core/models/job.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
 import "../../../core/repositories/job_repository.dart";
 import "../models/worker_job_filters.dart";
 
@@ -75,10 +74,7 @@ class WorkerJobsController extends AutoDisposeAsyncNotifier<WorkerJobsState> {
   }
 
   String? errorMessage(Object error) {
-    if (error is DioException) {
-      return mapDioExceptionToMessage(error);
-    }
-    return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    return mapErrorToMessage(error);
   }
 }
 

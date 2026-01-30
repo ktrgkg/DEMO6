@@ -1,8 +1,9 @@
 import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
-import "../storage/token_storage.dart";
 import "../auth/auth_state.dart";
+import "../config/app_config.dart";
+import "../storage/token_storage.dart";
 
 class ApiClient {
   ApiClient(this.dio);
@@ -11,8 +12,7 @@ class ApiClient {
 }
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final baseUrl =
-      const String.fromEnvironment("API_BASE_URL", defaultValue: "http://localhost:8000");
+  final baseUrl = AppConfig.apiBaseUrl;
   final dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,

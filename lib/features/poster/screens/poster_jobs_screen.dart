@@ -4,7 +4,10 @@ import "package:go_router/go_router.dart";
 
 import "../../../core/constants/app_routes.dart";
 import "../../../core/constants/app_strings.dart";
+import "../../../core/auth/auth_state.dart";
 import "../../../core/models/enums.dart";
+import "../../../core/widgets/account_summary_card.dart";
+import "../../../core/widgets/state_views.dart";
 import "../controllers/poster_jobs_controller.dart";
 import "../widgets/poster_job_card.dart";
 
@@ -53,6 +56,7 @@ class _PosterJobsScreenState extends ConsumerState<PosterJobsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authSessionProvider).user;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Công việc của tôi"),
@@ -78,11 +82,21 @@ class _PosterJobsScreenState extends ConsumerState<PosterJobsScreen>
         icon: const Icon(Icons.add),
         label: const Text("Đăng việc"),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _tabs
-            .map((status) => _PosterJobsTab(status: status))
-            .toList(),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: AccountSummaryCard(user: user),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: _tabs
+                  .map((status) => _PosterJobsTab(status: status))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -110,9 +124,16 @@ class _PosterJobsTab extends ConsumerWidget {
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text("Chưa có job")),
+                children: [
+                  const SizedBox(height: 80),
+                  EmptyStateView(
+                    message: "Chưa có job nào cho trạng thái này.",
+                    onRetry: () {
+                      ref
+                          .read(posterJobsControllerProvider(status).notifier)
+                          .refresh();
+                    },
+                  ),
                 ],
               ),
             );
@@ -124,6 +145,7 @@ class _PosterJobsTab extends ConsumerWidget {
                   .refresh();
             },
             child: ListView.builder(
+              padding: const EdgeInsets.only(top: 4),
               itemCount: data.jobs.length,
               itemBuilder: (context, index) {
                 final job = data.jobs[index];
@@ -137,8 +159,8 @@ class _PosterJobsTab extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ErrorStateView(
+        loading: () => const LoadingView(),
+        error: (error, _) => ErrorStateView(
           message: ref
                   .read(posterJobsControllerProvider(status).notifier)
                   .errorMessage(error) ??
@@ -147,30 +169,6 @@ class _PosterJobsTab extends ConsumerWidget {
             ref.read(posterJobsControllerProvider(status).notifier).refresh();
           },
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorStateView extends StatelessWidget {
-  const _ErrorStateView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: const Text("Thử lại"),
-          ),
-        ],
       ),
     );
   }
