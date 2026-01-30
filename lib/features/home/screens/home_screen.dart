@@ -5,6 +5,7 @@ import "../../../core/constants/app_strings.dart";
 import "../../../core/models/enums.dart";
 import "../../auth/controllers/auth_controller.dart";
 import "../../../core/auth/auth_state.dart";
+import "../../worker/screens/worker_jobs_screen.dart";
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -71,9 +72,7 @@ class WorkerHomePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Nội dung dành cho người lao động"),
-    );
+    return const WorkerJobsScreen();
   }
 }
 
