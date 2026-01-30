@@ -1,16 +1,21 @@
+import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 
 import "../../core/constants/app_routes.dart";
 import "../../features/auth/controllers/auth_controller.dart";
 import "../auth/auth_state.dart";
+import "../models/fee.dart";
 import "../models/job.dart";
 import "../../features/auth/screens/login_screen.dart";
 import "../../features/auth/screens/register_screen.dart";
 import "../../features/auth/screens/splash_screen.dart";
 import "../../features/home/screens/home_screen.dart";
+import "../../features/admin/screens/admin_fees_screen.dart";
 import "../../features/poster/screens/create_edit_job_screen.dart";
 import "../../features/worker/screens/job_detail_screen.dart";
+import "../../features/worker/screens/submit_payment_screen.dart";
+import "../../features/worker/screens/worker_fees_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
   ref.watch(authControllerProvider);
@@ -73,6 +78,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           final job = state.extra;
           return CreateEditJobScreen(job: job is Job ? job : null);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.workerFees,
+        builder: (context, state) => const WorkerFeesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.submitPayment,
+        builder: (context, state) {
+          final fee = state.extra;
+          if (fee is Fee) {
+            return SubmitPaymentScreen(fee: fee);
+          }
+          return const Scaffold(
+            body: Center(child: Text("Không tìm thấy thông tin phí.")),
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.adminFees,
+        builder: (context, state) => AdminFeesScreen(onLogout: () {}),
       ),
     ],
   );
