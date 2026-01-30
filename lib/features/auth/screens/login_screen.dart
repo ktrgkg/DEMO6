@@ -4,6 +4,7 @@ import "package:go_router/go_router.dart";
 
 import "../../../core/constants/app_routes.dart";
 import "../../../core/constants/app_strings.dart";
+import "../../../core/widgets/snackbars.dart";
 import "../controllers/auth_controller.dart";
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -32,8 +33,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted || message == null) {
       return;
     }
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showErrorSnackBar(context, message);
   }
 
   void _goToRegister() {

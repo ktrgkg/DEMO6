@@ -2,7 +2,7 @@ import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/models/fee.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
 import "../../../core/repositories/fee_repository.dart";
 
 class AdminFeesState {
@@ -56,7 +56,7 @@ class AdminFeesController extends AutoDisposeAsyncNotifier<AdminFeesState> {
   Future<String?> markPaid(String feeId, Map<String, dynamic> payload) async {
     final current = state.valueOrNull;
     if (current == null) {
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
     state = AsyncData(current.copyWith(isSubmitting: true));
     try {
@@ -73,18 +73,15 @@ class AdminFeesController extends AutoDisposeAsyncNotifier<AdminFeesState> {
       return null;
     } on DioException catch (error) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 
   String? errorMessage(Object error) {
-    if (error is DioException) {
-      return mapDioExceptionToMessage(error);
-    }
-    return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    return mapErrorToMessage(error);
   }
 }
 

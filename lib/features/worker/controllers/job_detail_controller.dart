@@ -2,7 +2,7 @@ import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/models/job.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
 import "../../../core/repositories/job_repository.dart";
 import "../../poster/controllers/poster_jobs_controller.dart";
 import "fee_summary_controller.dart";
@@ -55,10 +55,10 @@ class JobDetailController
       return null;
     } on DioException catch (error) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 
@@ -77,10 +77,10 @@ class JobDetailController
       return null;
     } on DioException catch (error) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 
@@ -98,10 +98,10 @@ class JobDetailController
       return null;
     } on DioException catch (error) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 
@@ -119,10 +119,10 @@ class JobDetailController
       return null;
     } on DioException catch (error) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 
@@ -140,10 +140,10 @@ class JobDetailController
       return null;
     } on DioException catch (error) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
       state = AsyncData(current.copyWith(isSubmitting: false));
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 }

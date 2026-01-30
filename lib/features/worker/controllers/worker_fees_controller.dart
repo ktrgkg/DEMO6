@@ -2,7 +2,7 @@ import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/models/fee.dart";
-import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/network/error_message.dart";
 import "../../../core/repositories/fee_repository.dart";
 import "fee_summary_controller.dart";
 
@@ -37,17 +37,14 @@ class WorkerFeesController extends AutoDisposeAsyncNotifier<List<Fee>> {
       await ref.read(feeSummaryProvider.notifier).refresh();
       return null;
     } on DioException catch (error) {
-      return mapDioExceptionToMessage(error);
+      return mapErrorToMessage(error);
     } catch (_) {
-      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+      return genericErrorMessage;
     }
   }
 
   String? errorMessage(Object error) {
-    if (error is DioException) {
-      return mapDioExceptionToMessage(error);
-    }
-    return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    return mapErrorToMessage(error);
   }
 }
 

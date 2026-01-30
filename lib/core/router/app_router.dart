@@ -16,6 +16,7 @@ import "../../features/poster/screens/create_edit_job_screen.dart";
 import "../../features/worker/screens/job_detail_screen.dart";
 import "../../features/worker/screens/submit_payment_screen.dart";
 import "../../features/worker/screens/worker_fees_screen.dart";
+import "../widgets/safe_fallback_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
   ref.watch(authControllerProvider);
@@ -24,6 +25,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     refreshListenable:
         GoRouterRefreshStream(ref.watch(authSessionProvider.notifier).stream),
+    errorBuilder: (context, state) => const SafeFallbackScreen(
+      message: "Trang không tồn tại hoặc thiếu dữ liệu.",
+    ),
     redirect: (context, state) {
       final location = state.matchedLocation;
 
@@ -90,8 +94,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (fee is Fee) {
             return SubmitPaymentScreen(fee: fee);
           }
-          return const Scaffold(
-            body: Center(child: Text("Không tìm thấy thông tin phí.")),
+          return const SafeFallbackScreen(
+            message: "Không tìm thấy thông tin phí cần hiển thị.",
           );
         },
       ),

@@ -1,12 +1,12 @@
-import "package:dio/dio.dart";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 
 import "../../../core/constants/app_routes.dart";
 import "../../../core/models/fee.dart";
-import "../../../core/network/dio_error_mapper.dart";
 import "../../../core/models/fee_summary.dart";
+import "../../../core/network/error_message.dart";
+import "../../../core/widgets/state_views.dart";
 import "../controllers/fee_summary_controller.dart";
 import "../controllers/worker_fees_controller.dart";
 
@@ -29,16 +29,20 @@ class WorkerFeesScreen extends ConsumerWidget {
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
             _SummaryCard(summaryState: summaryState),
             const SizedBox(height: 16),
             feesState.when(
               data: (fees) {
                 if (fees.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 48),
-                      child: Text("Không có phí cần thanh toán"),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 32),
+                    child: EmptyStateView(
+                      message: "Không có phí cần thanh toán.",
+                      onRetry: () {
+                        ref.read(workerFeesControllerProvider.notifier).refresh();
+                      },
                     ),
                   );
                 }
@@ -60,14 +64,11 @@ class WorkerFeesScreen extends ConsumerWidget {
                       .toList(),
                 );
               },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 48),
-                  child: CircularProgressIndicator(),
-                ),
+              loading: () => const LoadingView(
+                padding: EdgeInsets.only(top: 48),
               ),
-              error: (error, _) => _ErrorStateView(
-                message: _errorMessage(error),
+              error: (error, _) => ErrorStateView(
+                message: mapErrorToMessage(error),
                 onRetry: () {
                   ref.read(workerFeesControllerProvider.notifier).refresh();
                 },
@@ -77,13 +78,6 @@ class WorkerFeesScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _errorMessage(Object error) {
-    if (error is DioException) {
-      return mapDioExceptionToMessage(error);
-    }
-    return "Đã có lỗi xảy ra. Vui lòng thử lại.";
   }
 }
 
@@ -120,12 +114,8 @@ class _SummaryCard extends StatelessWidget {
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Text(
-            error is DioException
-                ? mapDioExceptionToMessage(error)
-                : "Đã có lỗi xảy ra. Vui lòng thử lại.",
-          ),
+          loading: () => const LoadingView(),
+          error: (error, _) => Text(mapErrorToMessage(error)),
         ),
       ),
     );
@@ -199,30 +189,6 @@ class _InfoRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorStateView extends StatelessWidget {
-  const _ErrorStateView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: const Text("Thử lại"),
-          ),
         ],
       ),
     );

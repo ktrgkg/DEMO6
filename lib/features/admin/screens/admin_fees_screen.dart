@@ -1,7 +1,11 @@
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
+import "../../../core/auth/auth_state.dart";
 import "../../../core/models/fee.dart";
+import "../../../core/widgets/account_summary_card.dart";
+import "../../../core/widgets/snackbars.dart";
+import "../../../core/widgets/state_views.dart";
 import "../controllers/admin_fees_controller.dart";
 
 class AdminFeesScreen extends ConsumerStatefulWidget {
@@ -44,6 +48,7 @@ class _AdminFeesScreenState extends ConsumerState<AdminFeesScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminFeesControllerProvider);
+    final user = ref.watch(authSessionProvider).user;
 
     return Scaffold(
       appBar: AppBar(
@@ -71,26 +76,30 @@ class _AdminFeesScreenState extends ConsumerState<AdminFeesScreen>
                 onRefresh: () async {
                   await ref.read(adminFeesControllerProvider.notifier).refresh();
                 },
-                child: data.fees.isEmpty
-                    ? const ListView(
-                        physics: AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(height: 120),
-                          Center(child: Text("Không có phí cần thanh toán")),
-                        ],
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: data.fees.length,
-                        itemBuilder: (context, index) {
-                          final fee = data.fees[index];
-                          return _AdminFeeCard(
-                            fee: fee,
-                            canMarkPaid: data.status != "paid",
-                            onMarkPaid: () => _openMarkPaidDialog(context, fee),
-                          );
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    AccountSummaryCard(user: user),
+                    if (data.fees.isEmpty)
+                      EmptyStateView(
+                        message: "Không có phí cần xử lý.",
+                        onRetry: () {
+                          ref
+                              .read(adminFeesControllerProvider.notifier)
+                              .refresh();
                         },
+                      )
+                    else
+                      ...data.fees.map(
+                        (fee) => _AdminFeeCard(
+                          fee: fee,
+                          canMarkPaid: data.status != "paid",
+                          onMarkPaid: () => _openMarkPaidDialog(context, fee),
+                        ),
                       ),
+                  ],
+                ),
               ),
               if (data.isSubmitting)
                 Container(
@@ -100,8 +109,8 @@ class _AdminFeesScreenState extends ConsumerState<AdminFeesScreen>
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ErrorStateView(
+        loading: () => const LoadingView(),
+        error: (error, _) => ErrorStateView(
           message: ref
                   .read(adminFeesControllerProvider.notifier)
                   .errorMessage(error) ??
@@ -184,16 +193,10 @@ class _AdminFeesScreenState extends ConsumerState<AdminFeesScreen>
       return;
     }
     if (message != null) {
-      _showMessage(message);
+      showErrorSnackBar(context, message);
     } else {
-      _showMessage("Đã đánh dấu đã thu tiền.");
+      showSuccessSnackBar(context, "Đã đánh dấu đã thu tiền.");
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
 }
 
@@ -271,30 +274,6 @@ class _InfoRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorStateView extends StatelessWidget {
-  const _ErrorStateView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: onRetry,
-            child: const Text("Thử lại"),
-          ),
         ],
       ),
     );
