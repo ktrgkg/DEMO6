@@ -1,11 +1,13 @@
 import "package:dio/dio.dart";
 import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:go_router/go_router.dart";
 
 import "../../../core/auth/auth_state.dart";
 import "../../../core/models/enums.dart";
 import "../../../core/models/job.dart";
 import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/constants/app_routes.dart";
 import "../controllers/fee_summary_controller.dart";
 import "../controllers/job_detail_controller.dart";
 import "../widgets/job_labels.dart";
@@ -21,20 +23,56 @@ class JobDetailScreen extends ConsumerWidget {
     final jobState = ref.watch(jobDetailControllerProvider(jobId));
     final feeSummaryState = ref.watch(feeSummaryProvider);
     final feeBlocked = feeSummaryState.valueOrNull?.blocked ?? false;
+    final role = ref.watch(authSessionProvider).user?.role ?? UserRole.worker;
+    final isPoster = role == UserRole.poster || role == UserRole.admin;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Chi tiết công việc"),
+        actions: [
+          if (isPoster)
+            jobState.when(
+              data: (state) {
+                final canEdit = state.job.status == JobStatus.draft ||
+                    state.job.status == JobStatus.open;
+                if (!canEdit) {
+                  return const SizedBox.shrink();
+                }
+                return IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: "Chỉnh sửa",
+                  onPressed: () {
+                    context.push(
+                      "${AppRoutes.posterJobEdit}/${state.job.id}",
+                      extra: state.job,
+                    );
+                  },
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+        ],
       ),
       body: jobState.when(
         data: (state) {
           final job = state.job;
           final isAssignee = _isAssignee(ref, job);
-          final canAccept =
-              job.status == JobStatus.open && !feeBlocked && !state.isSubmitting;
+          final canAccept = job.status == JobStatus.open &&
+              !feeBlocked &&
+              !state.isSubmitting &&
+              !isPoster;
           final canStart = job.status == JobStatus.accepted &&
               isAssignee &&
-              !state.isSubmitting;
+              !state.isSubmitting &&
+              !isPoster;
+          final posterAction = _buildPosterAction(
+            context,
+            ref,
+            job,
+            state.isSubmitting,
+            isPoster,
+          );
 
           return Column(
             children: [
@@ -80,7 +118,7 @@ class JobDetailScreen extends ConsumerWidget {
                           ? "Chưa có mô tả"
                           : job.description,
                     ),
-                    if (feeBlocked) ...[
+                    if (feeBlocked && !isPoster) ...[
                       const SizedBox(height: 16),
                       _FeeWarningBanner(
                         message:
@@ -90,7 +128,9 @@ class JobDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (job.status == JobStatus.open || job.status == JobStatus.accepted)
+              if (!isPoster &&
+                  (job.status == JobStatus.open ||
+                      job.status == JobStatus.accepted))
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -121,6 +161,27 @@ class JobDetailScreen extends ConsumerWidget {
                                 ),
                               )
                             : Text(_actionLabel(job, feeBlocked, isAssignee)),
+                      ),
+                    ),
+                  ),
+                ),
+              if (posterAction != null)
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: posterAction.onPressed,
+                        child: posterAction.isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(posterAction.label),
                       ),
                     ),
                   ),
@@ -169,6 +230,73 @@ class JobDetailScreen extends ConsumerWidget {
     }
     return "Đã có lỗi xảy ra. Vui lòng thử lại.";
   }
+
+  _PosterAction? _buildPosterAction(
+    BuildContext context,
+    WidgetRef ref,
+    Job job,
+    bool isSubmitting,
+    bool isPoster,
+  ) {
+    if (!isPoster) {
+      return null;
+    }
+    if (job.status == JobStatus.draft) {
+      return _PosterAction(
+        label: "Đăng lên",
+        isSubmitting: isSubmitting,
+        onPressed: isSubmitting
+            ? null
+            : () async {
+                final message = await ref
+                    .read(jobDetailControllerProvider(jobId).notifier)
+                    .publishJob();
+                _showResult(context, message);
+              },
+      );
+    }
+    if (job.status == JobStatus.open) {
+      return _PosterAction(
+        label: "Huỷ job",
+        isSubmitting: isSubmitting,
+        onPressed: isSubmitting
+            ? null
+            : () async {
+                final message = await ref
+                    .read(jobDetailControllerProvider(jobId).notifier)
+                    .cancelPosterJob();
+                _showResult(context, message);
+              },
+      );
+    }
+    if (job.status == JobStatus.working) {
+      return _PosterAction(
+        label: "Xác nhận hoàn thành",
+        isSubmitting: isSubmitting,
+        onPressed: isSubmitting
+            ? null
+            : () async {
+                final message = await ref
+                    .read(jobDetailControllerProvider(jobId).notifier)
+                    .confirmComplete();
+                _showResult(context, message);
+              },
+      );
+    }
+    return null;
+  }
+}
+
+class _PosterAction {
+  const _PosterAction({
+    required this.label,
+    required this.isSubmitting,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool isSubmitting;
+  final VoidCallback? onPressed;
 }
 
 class _InfoRow extends StatelessWidget {

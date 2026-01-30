@@ -4,10 +4,12 @@ import "package:go_router/go_router.dart";
 import "../../core/constants/app_routes.dart";
 import "../../features/auth/controllers/auth_controller.dart";
 import "../auth/auth_state.dart";
+import "../models/job.dart";
 import "../../features/auth/screens/login_screen.dart";
 import "../../features/auth/screens/register_screen.dart";
 import "../../features/auth/screens/splash_screen.dart";
 import "../../features/home/screens/home_screen.dart";
+import "../../features/poster/screens/create_edit_job_screen.dart";
 import "../../features/worker/screens/job_detail_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -63,6 +65,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final jobId = state.pathParameters["id"] ?? "";
           return JobDetailScreen(jobId: jobId);
+        },
+      ),
+      GoRoute(
+        path: "${AppRoutes.posterJobEdit}/:id",
+        builder: (context, state) {
+          final job = state.extra;
+          return CreateEditJobScreen(job: job is Job ? job : null);
         },
       ),
     ],

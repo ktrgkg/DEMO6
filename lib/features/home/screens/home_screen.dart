@@ -5,6 +5,7 @@ import "../../../core/constants/app_strings.dart";
 import "../../../core/models/enums.dart";
 import "../../auth/controllers/auth_controller.dart";
 import "../../../core/auth/auth_state.dart";
+import "../../poster/screens/poster_jobs_screen.dart";
 import "../../worker/screens/worker_jobs_screen.dart";
 
 class HomeScreen extends ConsumerWidget {
@@ -14,75 +15,37 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authSessionProvider);
     final role = authState.user?.role ?? UserRole.worker;
-    final roleLabel = role == UserRole.worker
-        ? AppStrings.workerRole
-        : AppStrings.posterRole;
-    final initialIndex = role == UserRole.worker ? 0 : 1;
-
-    return DefaultTabController(
-      length: 2,
-      initialIndex: initialIndex,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(AppStrings.homeTitle),
-          actions: [
-            TextButton(
-              onPressed: () {
-                ref.read(authControllerProvider).logout();
-              },
-              child: const Text(AppStrings.logoutButton),
-            ),
-          ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: AppStrings.workerHomeTab),
-              Tab(text: AppStrings.posterHomeTab),
-            ],
-          ),
-        ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.person_outline),
-                  const SizedBox(width: 8),
-                  Text("${AppStrings.roleDisplayPrefix} $roleLabel"),
-                ],
-              ),
-            ),
-            const Expanded(
-              child: TabBarView(
-                children: [
-                  WorkerHomePlaceholder(),
-                  PosterHomePlaceholder(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    if (role == UserRole.worker) {
+      return WorkerHomeScreen(onLogout: () {
+        ref.read(authControllerProvider).logout();
+      });
+    }
+    return PosterJobsScreen(
+      onLogout: () {
+        ref.read(authControllerProvider).logout();
+      },
     );
   }
 }
 
-class WorkerHomePlaceholder extends StatelessWidget {
-  const WorkerHomePlaceholder({super.key});
+class WorkerHomeScreen extends StatelessWidget {
+  const WorkerHomeScreen({super.key, required this.onLogout});
+
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
-    return const WorkerJobsScreen();
-  }
-}
-
-class PosterHomePlaceholder extends StatelessWidget {
-  const PosterHomePlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Nội dung dành cho nhà tuyển dụng"),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(AppStrings.homeTitle),
+        actions: [
+          TextButton(
+            onPressed: onLogout,
+            child: const Text(AppStrings.logoutButton),
+          ),
+        ],
+      ),
+      body: const WorkerJobsScreen(),
     );
   }
 }
