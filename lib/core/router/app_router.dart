@@ -8,6 +8,7 @@ import "../../features/auth/screens/login_screen.dart";
 import "../../features/auth/screens/register_screen.dart";
 import "../../features/auth/screens/splash_screen.dart";
 import "../../features/home/screens/home_screen.dart";
+import "../../features/worker/screens/job_detail_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
   ref.watch(authControllerProvider);
@@ -56,6 +57,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: "${AppRoutes.jobDetail}/:id",
+        builder: (context, state) {
+          final jobId = state.pathParameters["id"] ?? "";
+          return JobDetailScreen(jobId: jobId);
+        },
       ),
     ],
   );
