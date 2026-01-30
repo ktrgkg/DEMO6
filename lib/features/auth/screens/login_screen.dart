@@ -25,7 +25,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    await ref.read(authControllerProvider.notifier).login();
+    final message = await ref.read(authControllerProvider).login(
+          phone: _phoneController.text.trim(),
+          password: _passwordController.text,
+        );
+    if (!mounted || message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _goToRegister() {

@@ -2,18 +2,21 @@ import "package:flutter/material.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../../../core/constants/app_strings.dart";
+import "../../../core/models/enums.dart";
 import "../../auth/controllers/auth_controller.dart";
+import "../../../core/auth/auth_state.dart";
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-    final roleLabel = authState.role == UserRole.worker
+    final authState = ref.watch(authSessionProvider);
+    final role = authState.user?.role ?? UserRole.worker;
+    final roleLabel = role == UserRole.worker
         ? AppStrings.workerRole
         : AppStrings.posterRole;
-    final initialIndex = authState.role == UserRole.worker ? 0 : 1;
+    final initialIndex = role == UserRole.worker ? 0 : 1;
 
     return DefaultTabController(
       length: 2,
@@ -24,7 +27,7 @@ class HomeScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () {
-                ref.read(authControllerProvider.notifier).logout();
+                ref.read(authControllerProvider).logout();
               },
               child: const Text(AppStrings.logoutButton),
             ),

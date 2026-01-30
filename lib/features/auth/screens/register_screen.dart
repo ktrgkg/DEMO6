@@ -4,6 +4,7 @@ import "package:go_router/go_router.dart";
 
 import "../../../core/constants/app_routes.dart";
 import "../../../core/constants/app_strings.dart";
+import "../../../core/models/enums.dart";
 import "../controllers/auth_controller.dart";
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -21,7 +22,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _districtController = TextEditingController();
 
   UserRole _role = UserRole.worker;
-  String _province = AppStrings.provinceAnGiang;
+  Province _province = Province.anGiang;
 
   @override
   void dispose() {
@@ -34,7 +35,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
-    await ref.read(authControllerProvider.notifier).register(role: _role);
+    final message = await ref.read(authControllerProvider).register(
+          name: _nameController.text.trim(),
+          phone: _phoneController.text.trim(),
+          password: _passwordController.text,
+          role: _role,
+          province: _province,
+          district: _districtController.text.trim(),
+        );
+    if (!mounted || message == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _goToLogin() {
@@ -96,16 +109,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             },
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
+          DropdownButtonFormField<Province>(
             value: _province,
             decoration: const InputDecoration(labelText: AppStrings.provinceLabel),
             items: const [
-              DropdownMenuItem(
-                value: AppStrings.provinceAnGiang,
+              DropdownMenuItem<Province>(
+                value: Province.anGiang,
                 child: Text(AppStrings.provinceAnGiang),
               ),
-              DropdownMenuItem(
-                value: AppStrings.provinceKienGiang,
+              DropdownMenuItem<Province>(
+                value: Province.kienGiang,
                 child: Text(AppStrings.provinceKienGiang),
               ),
             ],

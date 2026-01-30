@@ -1,73 +1,97 @@
+import "package:dio/dio.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
+import "../../../core/models/enums.dart";
+import "../../../core/network/dio_error_mapper.dart";
+import "../../../core/repositories/auth_repository.dart";
 import "../../../core/storage/token_storage.dart";
+import "../../../core/auth/auth_state.dart";
 
-enum AuthStatus { unknown, authenticated, unauthenticated }
-
-enum UserRole { worker, poster }
-
-class AuthState {
-  const AuthState({
-    required this.status,
-    required this.role,
-  });
-
-  final AuthStatus status;
-  final UserRole role;
-
-  AuthState copyWith({
-    AuthStatus? status,
-    UserRole? role,
-  }) {
-    return AuthState(
-      status: status ?? this.status,
-      role: role ?? this.role,
-    );
-  }
-
-  factory AuthState.unknown() {
-    return const AuthState(status: AuthStatus.unknown, role: UserRole.worker);
-  }
-}
-
-final tokenStorageProvider = Provider<TokenStorage>((ref) {
-  return TokenStorage();
+final authControllerProvider = Provider<AuthController>((ref) {
+  final controller = AuthController(
+    ref,
+    ref.read(tokenStorageProvider),
+    ref.read(authRepositoryProvider),
+  );
+  controller.initialize();
+  return controller;
 });
 
-final authControllerProvider =
-    StateNotifierProvider<AuthController, AuthState>((ref) {
-  final storage = ref.read(tokenStorageProvider);
-  return AuthController(storage);
-});
+class AuthController {
+  AuthController(this._ref, this._tokenStorage, this._authRepository);
 
-class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._tokenStorage) : super(AuthState.unknown()) {
-    _init();
-  }
-
+  final Ref _ref;
   final TokenStorage _tokenStorage;
+  final AuthRepository _authRepository;
 
-  Future<void> _init() async {
+  AuthSessionNotifier get _session => _ref.read(authSessionProvider.notifier);
+
+  Future<void> initialize() async {
     final token = await _tokenStorage.getAccessToken();
     if (token == null || token.isEmpty) {
-      state = state.copyWith(status: AuthStatus.unauthenticated);
-    } else {
-      state = state.copyWith(status: AuthStatus.authenticated);
+      _session.setUnauthenticated();
+      return;
+    }
+
+    try {
+      final user = await _authRepository.me();
+      _session.setAuthenticated(user);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 401) {
+        await _tokenStorage.clear();
+      }
+      _session.setUnauthenticated();
+    } catch (_) {
+      _session.setUnauthenticated();
     }
   }
 
-  Future<void> login({UserRole role = UserRole.worker}) async {
-    await _tokenStorage.saveAccessToken("dummy_token");
-    state = state.copyWith(status: AuthStatus.authenticated, role: role);
+  Future<String?> login({
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      final response =
+          await _authRepository.login(phone: phone, password: password);
+      await _tokenStorage.saveAccessToken(response.accessToken);
+      _session.setAuthenticated(response.user);
+      return null;
+    } on DioException catch (error) {
+      return mapDioExceptionToMessage(error);
+    } catch (_) {
+      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    }
   }
 
-  Future<void> register({required UserRole role}) async {
-    await _tokenStorage.saveAccessToken("dummy_token");
-    state = state.copyWith(status: AuthStatus.authenticated, role: role);
+  Future<String?> register({
+    required String name,
+    required String phone,
+    required String password,
+    required UserRole role,
+    required Province province,
+    required String district,
+  }) async {
+    try {
+      final response = await _authRepository.register(
+        name: name,
+        phone: phone,
+        password: password,
+        role: userRoleToString(role),
+        province: provinceToString(province),
+        district: district,
+      );
+      await _tokenStorage.saveAccessToken(response.accessToken);
+      _session.setAuthenticated(response.user);
+      return null;
+    } on DioException catch (error) {
+      return mapDioExceptionToMessage(error);
+    } catch (_) {
+      return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    }
   }
 
   Future<void> logout() async {
     await _tokenStorage.clear();
-    state = state.copyWith(status: AuthStatus.unauthenticated);
+    _session.setUnauthenticated();
   }
 }

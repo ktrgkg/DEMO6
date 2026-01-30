@@ -3,17 +3,19 @@ import "package:go_router/go_router.dart";
 
 import "../../core/constants/app_routes.dart";
 import "../../features/auth/controllers/auth_controller.dart";
+import "../auth/auth_state.dart";
 import "../../features/auth/screens/login_screen.dart";
 import "../../features/auth/screens/register_screen.dart";
 import "../../features/auth/screens/splash_screen.dart";
 import "../../features/home/screens/home_screen.dart";
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider);
+  ref.watch(authControllerProvider);
+  final authState = ref.watch(authSessionProvider);
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable:
-        GoRouterRefreshStream(ref.watch(authControllerProvider.notifier).stream),
+        GoRouterRefreshStream(ref.watch(authSessionProvider.notifier).stream),
     redirect: (context, state) {
       final location = state.matchedLocation;
 
